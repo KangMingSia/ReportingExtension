@@ -1,0 +1,45 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "FMI own server 230 Dev",
+            "request": "launch",
+            "type": "al",
+            "environmentType": "OnPrem",
+            "server": "http://localhost",
+            "serverInstance": "FMI_BC230_Dev",
+            "port": 8049,
+            "authentication": "Windows",
+            "startupObjectId": 27,
+            "startupObjectType": "Page",
+            "breakOnError": "All",
+            "launchBrowser": true,
+            "enableLongRunningSqlStatements": true,
+            "enableSqlInformationDebugger": true,
+            "tenant": "default",
+            "usePublicURLFromServer": true,
+            "schemaUpdateMode": "ForceSync"
+        },
+        {
+            "name": "AL: Generated Download Symbols request",
+            "request": "launch",
+            "type": "al",
+            "server": "http://FMINAVAPPSVR.fairmont.ad",
+            "serverInstance": "FMI_BC230",
+            "authentication": "Windows",
+            "port": 7049
+        },
+        {
+            "name": "AL: Generated Attach request",
+            "request": "attach",
+            "type": "al",
+            "server": "http://FMINAVAPPSVR.fairmont.ad",
+            "serverInstance": "FMI_BC230",
+            "authentication": "Windows",
+            "port": 7049,
+            "sessionId": 63686,
+            "breakOnNext": "WebClient",
+            "breakOnError": "ExcludeTry"
+        }
+    ]
+}
