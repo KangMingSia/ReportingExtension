@@ -1,4 +1,4 @@
-report 67148 "CustomerStatement_Fairmont"
+report 50091 "CustomerStatement_Fairmont"
 {
     Caption = 'Customer Statement';
     DefaultRenderingLayout = CustomerStatementLayout;
@@ -470,10 +470,8 @@ report 67148 "CustomerStatement_Fairmont"
 
                             trigger OnPreDataItem()
                             begin
-                                if not IncludeAgingBand then begin
-                                    SetRange("Posting Date", 0D, EndDate);
-                                    SetRange("Due Date", 0D, EndDate);
-                                end;
+                                SetRange("Posting Date", 0D, EndDate);
+                                SetRange("Due Date", 0D, EndDate);
 
                                 SetRange("Currency Code", TempCurrency2.Code);
                                 OnCustLedgEntry2OnPreDataItemOnAfterSetFilters(CustLedgEntry2);
