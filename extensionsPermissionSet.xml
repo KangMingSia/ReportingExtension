@@ -2,7 +2,7 @@
 <PermissionSets>
   <PermissionSet RoleID="REPORTINGEXTENSION" RoleName="ReportingExtension">
     <Permission>
-      <ObjectID>67148</ObjectID>
+      <ObjectID>50091</ObjectID>
       <ObjectType>3</ObjectType>
       <ReadPermission>0</ReadPermission>
       <InsertPermission>0</InsertPermission>
