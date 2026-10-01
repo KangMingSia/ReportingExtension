@@ -465,6 +465,7 @@ report 50091 "CustomerStatement_Fairmont"
                                     CurrReport.Skip();
 
                                 CustBalance2 := CustBalance2 + CustLedgEntry."Remaining Amount";
+                                CustBalanceLCY := CustBalanceLCY + CustLedgEntry."Remaining Amt. (LCY)";
                                 ClearCompanyPicture();
                             end;
 
@@ -484,6 +485,9 @@ report 50091 "CustomerStatement_Fairmont"
                         {
                             DataItemTableView = sorting(Number) where(Number = const(1));
                             column(OverdueBalance; CustBalance2)
+                            {
+                            }
+                            column(OverdueBalanceLCY; CustBalanceLCY)
                             {
                             }
                         }
@@ -540,6 +544,7 @@ report 50091 "CustomerStatement_Fairmont"
                             CustBalance := Cust2."Net Change";
                         end;
                         CustBalance2 := 0;
+                        CustBalanceLCY := 0;
                     end;
 
                     trigger OnPreDataItem()
@@ -1066,6 +1071,7 @@ report 50091 "CustomerStatement_Fairmont"
         PrintIfEmailIsMissing: Boolean;
         ShowPrintIfEmailIsMissing: Boolean;
         CustBalance2: Decimal;
+        CustBalanceLCY: Decimal;
         FirstRecordPrinted: Boolean;
         YourReference: Text;
         EntriesLbl: Label 'Entries %1', Comment = '%1 = Currency code';
