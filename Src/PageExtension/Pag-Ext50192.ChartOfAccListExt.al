@@ -4,11 +4,20 @@ pageextension 50192 ChartOfAccListExt extends "Chart of Accounts"
     {
         addlast(Control1)
         {
-            field("LucaNet ID"; Rec."LucaNet ID")
+            field("Cost Centre"; Rec."Cost Centre")
             {
                 ApplicationArea = All;
-                ToolTip = 'Specifies the LucaNet ID for the G/L account.';
-                editable = false;
+                ToolTip = 'Specifies the value of the Cost Centre field.', Comment = '%';
+            }
+            field("Lucanet Item"; Rec."Lucanet Item")
+            {
+                ApplicationArea = All;
+                ToolTip = 'Specifies the value of the Lucanet Item field.', Comment = '%';
+            }
+            field("Lucanet Group"; Rec."Lucanet Group")
+            {
+                ApplicationArea = All;
+                ToolTip = 'Specifies the value of the Lucanet Group field.', Comment = '%';
             }
         }
     }
