@@ -1,4 +1,4 @@
-pageextension 50092 ChartOfAccListExt extends "Chart of Accounts"
+pageextension 50192 ChartOfAccListExt extends "Chart of Accounts"
 {
     layout
     {

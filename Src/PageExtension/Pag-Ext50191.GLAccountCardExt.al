@@ -1,4 +1,4 @@
-pageextension 50091 GLAccountCardExt extends "G/L Account Card"
+pageextension 50191 GLAccountCardExt extends "G/L Account Card"
 {
     layout
     {
