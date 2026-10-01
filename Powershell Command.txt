@@ -1,0 +1,11 @@
+Uninstall-NAVApp -ServerInstance "FMI_BC230_Dev" -Name "ReportingExtension"
+Unpublish-NAVApp -ServerInstance "FMI_BC230_Dev" -Name "ReportingExtension"
+Publish-NAVApp -ServerInstance "FMI_BC230_Dev" -Path ""
+Sync-NAVApp -ServerInstance "FMI_BC230_Dev" -Name "ReportingExtension"
+Install-NAVApp -ServerInstance "FMI_BC230_Dev" -Name "ReportingExtension"
+
+Uninstall-NAVApp -ServerInstance "FMI_BC230" -Name "ReportingExtension"
+Unpublish-NAVApp -ServerInstance "FMI_BC230" -Name "ReportingExtension"
+Publish-NAVApp -ServerInstance "FMI_BC230" -Path ""
+Sync-NAVApp -ServerInstance "FMI_BC230" -Name "ReportingExtension"
+Install-NAVApp -ServerInstance "FMI_BC230" -Name "ReportingExtension"
