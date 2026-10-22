@@ -4,7 +4,7 @@ pageextension 50191 GLAccountCardExt extends "G/L Account Card"
     {
         addlast(General)
         {
-            field("Cost Centre"; Rec."Cost Centre")
+            field("LucaNet Cost Center"; Rec."LucaNet Cost Center")
             {
                 ApplicationArea = All;
                 ToolTip = 'Specifies the value of the Cost Centre field.', Comment = '%';

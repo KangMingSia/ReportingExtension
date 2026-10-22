@@ -4,7 +4,7 @@ pageextension 50192 ChartOfAccListExt extends "Chart of Accounts"
     {
         addlast(Control1)
         {
-            field("Cost Centre"; Rec."Cost Centre")
+            field("LucaNet Cost Center"; Rec."LucaNet Cost Center")
             {
                 ApplicationArea = All;
                 ToolTip = 'Specifies the value of the Cost Centre field.', Comment = '%';
