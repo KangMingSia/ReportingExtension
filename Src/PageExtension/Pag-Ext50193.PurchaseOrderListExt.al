@@ -11,18 +11,18 @@ pageextension 50193 "Purchase Order List Ext" extends "Purchase Order List"
                 Image = BarCode;
                 Promoted = true;
                 PromotedCategory = Process;
-                ToolTip = 'Scan or paste a QR code containing PO JSON data to create a new Draft PO.';
+                ToolTip = 'Scan a QR code containing PO JSON data to create a new Draft PO.';
 
                 trigger OnAction()
                 var
-                    InS: InStream;
-                    FileName: Text;
-                    QRText: Text;
+                    ScanPage: Page "QR Scan Input Dialog";
+                    ScannedQRText: Text;
                 begin
-                    if UploadIntoStream('Scan or Select QR Code JSON Data', '', 'JSON files (*.json)|*.json|All files (*.*)|*.*', FileName, InS) then begin
-                        InS.ReadText(QRText);
-                        if QRText <> '' then
-                            CreatePOFromJson(QRText);
+                    ScanPage.Caption('Scan QR Code to Create PO');
+                    if ScanPage.RunModal() = ACTION::OK then begin
+                        ScannedQRText := ScanPage.GetScannedText();
+                        if ScannedQRText <> '' then
+                            CreatePOFromJson(ScannedQRText);
                     end;
                 end;
             }
@@ -43,19 +43,15 @@ pageextension 50193 "Purchase Order List Ext" extends "Purchase Order List"
         VendorNo: Code[20];
         VendorOrderNo: Code[35];
         YourReference: Text[35];
+        ParsedDate: Date;
     begin
         // 1. Parse JSON content
         if not JObject.ReadFrom(JsonString) then
             Error('The scanned text is not valid JSON.');
 
-        // Validate payload type
-        // if JObject.Get('payload_type', JToken) then
-        //     if JToken.AsValue().AsText() <> 'AN_BC_PO_DRAFT_V1' then
-        //         Error('Invalid payload type.');
-
         // 2. Extract key fields for duplicate validation
         if JObject.Get('vendor_no', JToken) then
-            VendorNo := CopyStr(JToken.AsValue().AsText(), 1, MaxStrLen(VendorNo));
+            VendorNo := UpperCase(CopyStr(JToken.AsValue().AsText(), 1, MaxStrLen(VendorNo)));
         if JObject.Get('vendor_order_no', JToken) then
             VendorOrderNo := CopyStr(JToken.AsValue().AsText(), 1, MaxStrLen(VendorOrderNo));
         if JObject.Get('your_reference', JToken) then
@@ -90,7 +86,7 @@ pageextension 50193 "Purchase Order List Ext" extends "Purchase Order List"
             end;
         end;
 
-        // 4. Create Header (Only runs if no duplicate was found)
+        // 4. Create Header
         PurchHeader.Init();
         PurchHeader."Document Type" := PurchHeader."Document Type"::Order;
         PurchHeader.Insert(true); // Triggers No. Series
@@ -102,9 +98,17 @@ pageextension 50193 "Purchase Order List Ext" extends "Purchase Order List"
         if YourReference <> '' then
             PurchHeader.Validate("Your Reference", YourReference);
         if JObject.Get('currency_code', JToken) then
-            PurchHeader.Validate("Currency Code", JToken.AsValue().AsText());
+            if JToken.AsValue().AsText() <> '' then
+                PurchHeader.Validate("Currency Code", UpperCase(JToken.AsValue().AsText()));
         if JObject.Get('location_code', JToken) then
-            PurchHeader.Validate("Location Code", JToken.AsValue().AsText());
+            if JToken.AsValue().AsText() <> '' then
+                PurchHeader.Validate("Location Code", UpperCase(JToken.AsValue().AsText()));
+
+        // SAFE DATE PARSING: Header Expected Receipt Date
+        if JObject.Get('expected_receipt_date', JToken) then begin
+            if ParseJsonDate(JToken.AsValue().AsText(), ParsedDate) then
+                PurchHeader.Validate("Expected Receipt Date", ParsedDate);
+        end;
 
         PurchHeader.Modify(true);
 
@@ -124,15 +128,23 @@ pageextension 50193 "Purchase Order List Ext" extends "Purchase Order List"
 
                     PurchLine.Validate(Type, PurchLine.Type::Item);
                     if LineObject.Get('item_no', JToken) then
-                        PurchLine.Validate("No.", JToken.AsValue().AsText());
+                        PurchLine.Validate("No.", UpperCase(JToken.AsValue().AsText()));
                     if LineObject.Get('location_code', JToken) then
-                        PurchLine.Validate("Location Code", JToken.AsValue().AsText());
+                        if JToken.AsValue().AsText() <> '' then
+                            PurchLine.Validate("Location Code", UpperCase(JToken.AsValue().AsText()));
                     if LineObject.Get('quantity', JToken) then
                         PurchLine.Validate(Quantity, JToken.AsValue().AsDecimal());
                     if LineObject.Get('unit_of_measure_code', JToken) then
-                        PurchLine.Validate("Unit of Measure Code", JToken.AsValue().AsText());
+                        if JToken.AsValue().AsText() <> '' then
+                            PurchLine.Validate("Unit of Measure Code", UpperCase(JToken.AsValue().AsText()));
                     if LineObject.Get('direct_unit_cost', JToken) then
                         PurchLine.Validate("Direct Unit Cost", JToken.AsValue().AsDecimal());
+
+                    // SAFE DATE PARSING: Line Expected Receipt Date
+                    if LineObject.Get('expected_receipt_date', JToken) then begin
+                        if ParseJsonDate(JToken.AsValue().AsText(), ParsedDate) then
+                            PurchLine.Validate("Expected Receipt Date", ParsedDate);
+                    end;
 
                     PurchLine.Modify(true);
                     NextLineNo += 10000;
@@ -142,5 +154,27 @@ pageextension 50193 "Purchase Order List Ext" extends "Purchase Order List"
 
         Message('Purchase Order %1 created successfully.', PurchHeader."No.");
         Page.Run(Page::"Purchase Order", PurchHeader);
+    end;
+
+    local procedure ParseJsonDate(DateString: Text; var TargetDate: Date): Boolean
+    var
+        YearVal, MonthVal, DayVal : Integer;
+    begin
+        Clear(TargetDate);
+        if DateString = '' then
+            exit(false);
+
+        // Standard ISO format: YYYY-MM-DD
+        if StrLen(DateString) >= 10 then begin
+            if Evaluate(YearVal, CopyStr(DateString, 1, 4)) and
+               Evaluate(MonthVal, CopyStr(DateString, 6, 2)) and
+               Evaluate(DayVal, CopyStr(DateString, 9, 2)) then begin
+                TargetDate := DMY2Date(DayVal, MonthVal, YearVal);
+                exit(true);
+            end;
+        end;
+
+        // Fallback to standard AL Evaluate if non-ISO date string
+        exit(Evaluate(TargetDate, DateString));
     end;
 }
