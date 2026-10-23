@@ -1,8 +1,7 @@
 page 50089 "QR Scan Input Dialog"
 {
-    PageType = CardPart;
-    Caption = 'Scan QR Code';
-    ShowFilter = false;
+    PageType = StandardDialog;
+    Caption = 'Scan QR Code to Create Purchase Order';
     UsageCategory = None;
 
     layout
@@ -18,7 +17,7 @@ page 50089 "QR Scan Input Dialog"
                     ApplicationArea = All;
                     ShowCaption = false;
                     MultiLine = true;
-                    ToolTip = 'Scan the QR code directly.';
+                    ToolTip = 'Scan the QR code to create a purchase order.';
 
                     trigger OnValidate()
                     begin
@@ -51,11 +50,11 @@ page 50089 "QR Scan Input Dialog"
         YourReference: Text[35];
         ParsedDate: Date;
     begin
-        // 1. Parse JSON content
+        // Parse JSON
         if not JObject.ReadFrom(JsonString) then
             Error('The scanned text is not valid JSON.');
 
-        // 2. Extract key fields for duplicate validation
+        // Read header values
         if JObject.Get('vendor_no', JToken) then
             VendorNo := UpperCase(CopyStr(JToken.AsValue().AsText(), 1, MaxStrLen(VendorNo)));
         if JObject.Get('vendor_order_no', JToken) then
@@ -63,33 +62,37 @@ page 50089 "QR Scan Input Dialog"
         if JObject.Get('your_reference', JToken) then
             YourReference := CopyStr(JToken.AsValue().AsText(), 1, MaxStrLen(YourReference));
 
-        // 3. DUPLICATE CHECK
+        // Duplicate Check - Vendor Order No.
         if VendorNo <> '' then begin
             if VendorOrderNo <> '' then begin
                 PurchHeader.Reset();
                 PurchHeader.SetRange("Document Type", PurchHeader."Document Type"::Order);
                 PurchHeader.SetRange("Buy-from Vendor No.", VendorNo);
                 PurchHeader.SetRange("Vendor Order No.", VendorOrderNo);
-                if PurchHeader.FindFirst() then begin
-                    if Confirm('A Purchase Order (%1) already exists for Vendor %2 with Order No. "%3".\\Do you want to open it?', true, PurchHeader."No.", VendorNo, VendorOrderNo) then
-                        Page.Run(Page::"Purchase Order", PurchHeader);
-                    exit;
-                end;
+                if PurchHeader.FindFirst() then
+                    Error(
+                        'Purchase Order %1 already exists for Vendor %2 with Vendor Order No. %3.',
+                        PurchHeader."No.",
+                        VendorNo,
+                        VendorOrderNo);
             end;
+
+            // Duplicate Check - Your Reference
             if YourReference <> '' then begin
                 PurchHeader.Reset();
                 PurchHeader.SetRange("Document Type", PurchHeader."Document Type"::Order);
                 PurchHeader.SetRange("Buy-from Vendor No.", VendorNo);
                 PurchHeader.SetRange("Your Reference", YourReference);
-                if PurchHeader.FindFirst() then begin
-                    if Confirm('A Purchase Order (%1) already exists for Vendor %2 with Your Reference "%3".\\Do you want to open it?', true, PurchHeader."No.", VendorNo, YourReference) then
-                        Page.Run(Page::"Purchase Order", PurchHeader);
-                    exit;
-                end;
+                if PurchHeader.FindFirst() then
+                    Error(
+                        'Purchase Order %1 already exists for Vendor %2 with Your Reference %3.',
+                        PurchHeader."No.",
+                        VendorNo,
+                        YourReference);
             end;
         end;
 
-        // 4. Create Header
+        // Create Purchase Header
         PurchHeader.Init();
         PurchHeader."Document Type" := PurchHeader."Document Type"::Order;
         PurchHeader.Insert(true);
@@ -112,7 +115,7 @@ page 50089 "QR Scan Input Dialog"
 
         PurchHeader.Modify(true);
 
-        // 5. Loop through Purchase Lines
+        // Create Purchase Lines
         if JObject.Get('lines', LinesToken) then begin
             if LinesToken.IsArray() then begin
                 JLines := LinesToken.AsArray();
@@ -145,18 +148,22 @@ page 50089 "QR Scan Input Dialog"
                     end;
 
                     PurchLine.Modify(true);
+
                     NextLineNo += 10000;
                 end;
             end;
         end;
 
-        // Skip Message popup so it opens directly without requiring any extra user clicks
-        Page.Run(Page::"Purchase Order", PurchHeader);
+        Message(
+            'Purchase Order %1 has been created successfully.',
+            PurchHeader."No.");
     end;
 
     local procedure ParseJsonDate(DateString: Text; var TargetDate: Date): Boolean
     var
-        YearVal, MonthVal, DayVal : Integer;
+        YearVal: Integer;
+        MonthVal: Integer;
+        DayVal: Integer;
     begin
         Clear(TargetDate);
         if DateString = '' then
@@ -164,7 +171,8 @@ page 50089 "QR Scan Input Dialog"
         if StrLen(DateString) >= 10 then begin
             if Evaluate(YearVal, CopyStr(DateString, 1, 4)) and
                Evaluate(MonthVal, CopyStr(DateString, 6, 2)) and
-               Evaluate(DayVal, CopyStr(DateString, 9, 2)) then begin
+               Evaluate(DayVal, CopyStr(DateString, 9, 2))
+            then begin
                 TargetDate := DMY2Date(DayVal, MonthVal, YearVal);
                 exit(true);
             end;
