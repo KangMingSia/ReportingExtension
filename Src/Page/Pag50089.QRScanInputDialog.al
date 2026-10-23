@@ -1,7 +1,8 @@
 page 50089 "QR Scan Input Dialog"
 {
-    PageType = Card;
+    PageType = CardPart;
     Caption = 'Scan QR Code';
+    ShowFilter = false;
     UsageCategory = None;
 
     layout
@@ -10,20 +11,20 @@ page 50089 "QR Scan Input Dialog"
         {
             group(ScanGroup)
             {
-                Caption = 'Scan barcode directly';
+                ShowCaption = false;
+
                 field(ScannedTextData; ScannedText)
                 {
                     ApplicationArea = All;
-                    Caption = 'QR Code Input';
+                    ShowCaption = false;
                     MultiLine = true;
-                    ToolTip = 'Scan the QR code directly into this field.';
+                    ToolTip = 'Scan the QR code directly.';
 
                     trigger OnValidate()
                     begin
-                        // Fires immediately when the scanner completes and sends 'Enter'
                         if ScannedText <> '' then begin
                             CreatePOFromJson(ScannedText);
-                            CurrPage.Close(); // Auto-close dialog after PO is created
+                            CurrPage.Close();
                         end;
                     end;
                 }
@@ -64,7 +65,6 @@ page 50089 "QR Scan Input Dialog"
 
         // 3. DUPLICATE CHECK
         if VendorNo <> '' then begin
-            // Check 3A: Vendor No. + Vendor Order No.
             if VendorOrderNo <> '' then begin
                 PurchHeader.Reset();
                 PurchHeader.SetRange("Document Type", PurchHeader."Document Type"::Order);
@@ -76,8 +76,6 @@ page 50089 "QR Scan Input Dialog"
                     exit;
                 end;
             end;
-
-            // Check 3B: Vendor No. + Your Reference
             if YourReference <> '' then begin
                 PurchHeader.Reset();
                 PurchHeader.SetRange("Document Type", PurchHeader."Document Type"::Order);
@@ -94,8 +92,7 @@ page 50089 "QR Scan Input Dialog"
         // 4. Create Header
         PurchHeader.Init();
         PurchHeader."Document Type" := PurchHeader."Document Type"::Order;
-        PurchHeader.Insert(true); // Triggers No. Series
-
+        PurchHeader.Insert(true);
         if VendorNo <> '' then
             PurchHeader.Validate("Buy-from Vendor No.", VendorNo);
         if VendorOrderNo <> '' then
@@ -108,8 +105,6 @@ page 50089 "QR Scan Input Dialog"
         if JObject.Get('location_code', JToken) then
             if JToken.AsValue().AsText() <> '' then
                 PurchHeader.Validate("Location Code", UpperCase(JToken.AsValue().AsText()));
-
-        // Header Expected Receipt Date Parsing
         if JObject.Get('expected_receipt_date', JToken) then begin
             if ParseJsonDate(JToken.AsValue().AsText(), ParsedDate) then
                 PurchHeader.Validate("Expected Receipt Date", ParsedDate);
@@ -144,8 +139,6 @@ page 50089 "QR Scan Input Dialog"
                             PurchLine.Validate("Unit of Measure Code", UpperCase(JToken.AsValue().AsText()));
                     if LineObject.Get('direct_unit_cost', JToken) then
                         PurchLine.Validate("Direct Unit Cost", JToken.AsValue().AsDecimal());
-
-                    // Line Expected Receipt Date Parsing
                     if LineObject.Get('expected_receipt_date', JToken) then begin
                         if ParseJsonDate(JToken.AsValue().AsText(), ParsedDate) then
                             PurchLine.Validate("Expected Receipt Date", ParsedDate);
@@ -157,7 +150,7 @@ page 50089 "QR Scan Input Dialog"
             end;
         end;
 
-        Message('Purchase Order %1 created successfully.', PurchHeader."No.");
+        // Skip Message popup so it opens directly without requiring any extra user clicks
         Page.Run(Page::"Purchase Order", PurchHeader);
     end;
 
